@@ -62,7 +62,7 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
     setSelectedColor(color)
   }
   // 处理像素点击
-  const handlePixelClick = (event: React.MouseEvent<HTMLDivElement>, rowIndex: number, colIndex: number) => {
+  const handlePixelClick = (rowIndex: number, colIndex: number) => {
     if (!selectedColor) return
   // 获取选中颜色对应的key
     const selectedKey = colorPalette.find(([_, color]) => color === selectedColor)?.[0]
@@ -189,7 +189,7 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
                 backgroundColor: pixel.color,
                 cursor: selectedColor ? 'pointer' : 'default'
               }}
-              onClick={(event) => handlePixelClick(event, rowIndex, colIndex)}
+              onClick={() => handlePixelClick(rowIndex, colIndex)}
             >
               {(typeof pixel.value === 'number' || (!isNaN(Number(pixel.value)) && pixel.value !== '')) && (
                 <span className="pixel-value" style={{ fontSize: `${Math.max(actualPixelSize * 0.88, 4)}px` }}>{pixel.value}</span>
