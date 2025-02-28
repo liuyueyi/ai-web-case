@@ -2,6 +2,8 @@ import { FC, useState, useEffect, useRef } from 'react'
 import '../styles/PixelMatrix.css'
 import { defaultNumberColors } from '../config/colorConfig'
 import { backgroundLetterColors } from '../config/borderColorsConfig'
+// 定义颜色映射类型
+type ColorMap = { [key: string]: string }
 
 interface PixelMatrixProps {
   matrix: (number | string)[][]
@@ -31,14 +33,13 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   function getPixelColor(value: number | string) {
     if (value === 0) return inactiveColor
     if (typeof value === 'string') {
-      // 检查字符串是否为数字
       const isNumericString = !isNaN(Number(value))
       if (isNumericString) {
-        return defaultNumberColors[value] || inactiveColor
+        return (defaultNumberColors as ColorMap)[value] || inactiveColor
       }
-      return backgroundLetterColors[value] || activeColor
+      return (backgroundLetterColors as ColorMap)[value] || activeColor
     } else {
-      return defaultNumberColors[value] || inactiveColor
+      return (defaultNumberColors as ColorMap)[value.toString()] || inactiveColor
     }
   }
 
