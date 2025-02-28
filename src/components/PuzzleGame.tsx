@@ -52,12 +52,12 @@ const PuzzleGame: React.FC = () => {
   // 初始化拼图
   const initializePuzzle = () => {
     const newTiles: Tile[] = [];
-    const tileSize = 100;
+    // const tileSize = 100;
     const totalTiles = config.size * config.size;
 
     for (let i = 0; i < totalTiles; i++) {
-      const row = Math.floor(i / config.size);
-      const col = i % config.size;
+      // const row = Math.floor(i / config.size);
+      // const col = i % config.size;
       newTiles.push({
         id: i,
         currentPos: i,
