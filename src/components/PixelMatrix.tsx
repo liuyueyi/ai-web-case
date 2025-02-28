@@ -2,8 +2,6 @@ import { FC, useState, useEffect, useRef } from 'react'
 import '../styles/PixelMatrix.css'
 import { defaultNumberColors } from '../config/colorConfig'
 import { backgroundLetterColors } from '../config/borderColorsConfig'
-// 定义颜色映射类型
-type ColorMap = { [key: string]: string }
 
 interface PixelMatrixProps {
   matrix: (number | string)[][]
@@ -26,21 +24,26 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   const [scale, setScale] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
   const [selectedColor, setSelectedColor] = useState('')
-  // 从defaultNumberColors中提取颜色值初始化调色板
-  const colorPalette = Array.from(new Set(Object.values(defaultNumberColors)))
-
+  // 从defaultNumberColors中提取颜色值初始化调色板，保持键值对映射关系
+  const colorPalette = Object.entries(defaultNumberColors)
   // 获取像素颜色的函数
   function getPixelColor(value: number | string) {
     if (value === 0) return inactiveColor
     if (typeof value === 'string') {
+      // 检查字符串是否为数字
       const isNumericString = !isNaN(Number(value))
       if (isNumericString) {
-        return (defaultNumberColors as ColorMap)[value] || inactiveColor
+        return 'white';
+        // if (value != '1') {
+        //   return 'white';
+        // } else {
+        // 这个是预览的效果
+        //   return defaultNumberColors[value] || activeColor
+        // }
       }
-      return (backgroundLetterColors as ColorMap)[value] || activeColor
-    } else {
-      return (defaultNumberColors as ColorMap)[value.toString()] || inactiveColor
+      return backgroundLetterColors[value] || activeColor
     }
+    return defaultNumberColors[value] || `#${Math.abs(value).toString(16).padStart(6, '0')}`
   }
 
   const [matrixData, setMatrixData] = useState<MatrixData[][]>(() =>
@@ -66,17 +69,51 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   }
 
   // 处理像素点击
-  const handlePixelClick = (rowIndex: number, colIndex: number) => {
+  const handlePixelClick = (event, rowIndex: number, colIndex: number) => {
     if (!selectedColor) return
 
-    setMatrixData(prev => {
-      const newMatrix = [...prev]
-      newMatrix[rowIndex][colIndex] = {
-        ...newMatrix[rowIndex][colIndex],
-        color: selectedColor
+    // 获取选中颜色对应的key
+    const selectedKey = colorPalette.find(([_, color]) => color === selectedColor)?.[0]
+    if (!selectedKey) return
+
+    // 获取当前像素的值
+    const currentValue = matrixData[rowIndex][colIndex].value.toString()
+
+    // 如果当前像素的值与选中颜色的key相同，则开始连锁反应
+    if (currentValue === selectedKey) {
+      const updateConnectedPixels = (row: number, col: number, visited: Set<string>) => {
+        // 检查边界条件和是否已访问
+        if (
+          row < 0 || row >= matrixData.length ||
+          col < 0 || col >= matrixData[0].length ||
+          visited.has(`${row}-${col}`)
+        ) return
+
+        // 标记为已访问
+        visited.add(`${row}-${col}`)
+
+        // 检查当前像素值是否匹配
+        const pixelValue = matrixData[row][col].value.toString()
+        if (pixelValue !== selectedKey) return
+
+        // 更新当前像素的颜色
+        const pixelElement = document.querySelector(
+          `.pixel-matrix .pixel[data-row="${row}"][data-col="${col}"]`
+        ) as HTMLElement
+        if (pixelElement) {
+          pixelElement.style.backgroundColor = selectedColor
+        }
+
+        // 递归检查上下左右相邻的像素
+        updateConnectedPixels(row - 1, col, visited) // 上
+        updateConnectedPixels(row + 1, col, visited) // 下
+        updateConnectedPixels(row, col - 1, visited) // 左
+        updateConnectedPixels(row, col + 1, visited) // 右
       }
-      return newMatrix
-    })
+
+      // 开始连锁更新
+      updateConnectedPixels(rowIndex, colIndex, new Set<string>())
+    }
   }
 
   useEffect(() => {
@@ -107,13 +144,15 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   return (
     <div className="pixel-matrix-container" ref={containerRef}>
       <div className="color-palette">
-        {colorPalette.map((color, index) => (
+        {colorPalette.map(([key, color]) => (
           <div
-            key={index}
+            key={key}
             className={`color-block ${selectedColor === color ? 'selected' : ''}`}
             style={{ backgroundColor: color }}
             onClick={() => handleColorSelect(color)}
-          />
+          >
+            <span className="color-key">{key}</span>
+          </div>
         ))}
       </div>
       <div className="zoom-controls">
@@ -133,14 +172,20 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
             <div
               key={`${rowIndex}-${colIndex}`}
               className="pixel"
+              data-row={rowIndex}
+              data-col={colIndex}
               style={{
                 width: `${actualPixelSize}px`,
                 height: `${actualPixelSize}px`,
                 backgroundColor: pixel.color,
                 cursor: selectedColor ? 'pointer' : 'default'
               }}
-              onClick={() => handlePixelClick(rowIndex, colIndex)}
-            />
+              onClick={(event) => handlePixelClick(event, rowIndex, colIndex)}
+            >
+              {(typeof pixel.value === 'number' || (!isNaN(Number(pixel.value)) && pixel.value !== '')) && (
+                <span className="pixel-value" style={{ fontSize: `${Math.max(actualPixelSize * 0.88, 4)}px` }}>{pixel.value}</span>
+              )}
+            </div>
           ))
         )}
       </div>
