@@ -24,6 +24,7 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   const [scale, setScale] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
   const [selectedColor, setSelectedColor] = useState('')
+  const [isPreviewMode, setIsPreviewMode] = useState(false)
   // 从defaultNumberColors中提取颜色值初始化调色板，保持键值对映射关系
   const colorPalette = Object.entries(defaultNumberColors)
   // 获取像素颜色的函数
@@ -33,19 +34,12 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
       // 检查字符串是否为数字
       const isNumericString = !isNaN(Number(value))
       if (isNumericString) {
-        return 'white';
-        // if (value != '1') {
-        //   return 'white';
-        // } else {
-        // 这个是预览的效果
-        //   return defaultNumberColors[value] || activeColor
-        // }
+        return isPreviewMode ? defaultNumberColors[value] || activeColor : 'white'
       }
       return backgroundLetterColors[value] || activeColor
     }
     return defaultNumberColors[value] || `#${Math.abs(value).toString(16).padStart(6, '0')}`
   }
-
   const [matrixData, setMatrixData] = useState<MatrixData[][]>(() =>
     matrix.map(row => row.map(value => ({ value, color: getPixelColor(value) })))
   )
@@ -54,7 +48,7 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   useEffect(() => {
     setMatrixData(matrix.map(row => row.map(value => ({ value, color: getPixelColor(value) }))))
   }, [matrix, getPixelColor])
-
+ 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.2, 3))
   }
@@ -62,7 +56,7 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   const handleZoomOut = () => {
     setScale(prev => Math.max(prev - 0.2, 0.5))
   }
-
+  
   // 处理颜色选择
   const handleColorSelect = (color: string) => {
     setSelectedColor(color)
@@ -113,6 +107,17 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
 
       // 开始连锁更新
       updateConnectedPixels(rowIndex, colIndex, new Set<string>())
+    } else {
+      console.log('走不相同的逻辑', rowIndex, colIndex, selectedColor);
+      // 如果当前像素的值与选中颜色的key不同，则更新当前像素的颜色
+      const pixelElement = document.querySelector(
+        `.pixel-matrix .pixel[data-row="${rowIndex}"][data-col="${colIndex}"]`
+      ) as HTMLElement
+      console.log('pixelElement', pixelElement);
+      if (pixelElement) {
+        pixelElement.style.backgroundColor = selectedColor
+      }
+      
     }
   }
 
@@ -159,6 +164,22 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
         <button onClick={handleZoomOut} className="zoom-button">-</button>
         <span className="zoom-level">{Math.round(scale * 100)}%</span>
         <button onClick={handleZoomIn} className="zoom-button">+</button>
+        <button
+          onClick={() => setIsPreviewMode(!isPreviewMode)}
+          className={`preview-toggle ${isPreviewMode ? 'active' : ''}`}
+          style={{
+            padding: '4px 12px',
+            borderRadius: '15px',
+            border: 'none',
+            backgroundColor: isPreviewMode ? '#4CAF50' : '#e0e0e0',
+            color: isPreviewMode ? 'white' : '#666',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            marginLeft: '10px'
+          }}
+        >
+          {isPreviewMode ? '预览开启' : '预览关闭'}
+        </button>
       </div>
       <div 
         className="pixel-matrix"

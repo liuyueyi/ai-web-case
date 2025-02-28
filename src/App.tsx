@@ -15,7 +15,7 @@ function App() {
         <Routes>
           <Route path='/' element={
             <>
-              <h1>像素矩阵渲染</h1>
+              <h1>在线像素块填色游戏</h1>
               <PixelMatrix 
                 matrix={sampleMatrix} 
                 pixelSize={10}
