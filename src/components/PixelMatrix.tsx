@@ -28,17 +28,17 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   // 从defaultNumberColors中提取颜色值初始化调色板，保持键值对映射关系
   const colorPalette = Object.entries(defaultNumberColors)
   // 获取像素颜色的函数
-  function getPixelColor(value: number | string) {
+  function getPixelColor(value: number | string): string {
     if (value === 0) return inactiveColor
     if (typeof value === 'string') {
       // 检查字符串是否为数字
       const isNumericString = !isNaN(Number(value))
       if (isNumericString) {
-        return isPreviewMode ? defaultNumberColors[value] || activeColor : 'white'
+        return isPreviewMode ? (defaultNumberColors[value as keyof typeof defaultNumberColors] || activeColor) : 'white'
       }
-      return backgroundLetterColors[value] || activeColor
+      return backgroundLetterColors[value as keyof typeof backgroundLetterColors] || activeColor
     }
-    return defaultNumberColors[value] || `#${Math.abs(value).toString(16).padStart(6, '0')}`
+    return defaultNumberColors[value.toString() as keyof typeof defaultNumberColors] || `#${Math.abs(value).toString(16).padStart(6, '0')}`
   }
   const [matrixData, setMatrixData] = useState<MatrixData[][]>(() =>
     matrix.map(row => row.map(value => ({ value, color: getPixelColor(value) })))
@@ -61,19 +61,15 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   const handleColorSelect = (color: string) => {
     setSelectedColor(color)
   }
-
   // 处理像素点击
-  const handlePixelClick = (event, rowIndex: number, colIndex: number) => {
+  const handlePixelClick = (event: React.MouseEvent<HTMLDivElement>, rowIndex: number, colIndex: number) => {
     if (!selectedColor) return
-
-    // 获取选中颜色对应的key
+  // 获取选中颜色对应的key
     const selectedKey = colorPalette.find(([_, color]) => color === selectedColor)?.[0]
     if (!selectedKey) return
-
-    // 获取当前像素的值
+  // 获取当前像素的值
     const currentValue = matrixData[rowIndex][colIndex].value.toString()
-
-    // 如果当前像素的值与选中颜色的key相同，则开始连锁反应
+  // 如果当前像素的值与选中颜色的key相同，则开始连锁反应
     if (currentValue === selectedKey) {
       const updateConnectedPixels = (row: number, col: number, visited: Set<string>) => {
         // 检查边界条件和是否已访问
@@ -82,42 +78,34 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
           col < 0 || col >= matrixData[0].length ||
           visited.has(`${row}-${col}`)
         ) return
-
-        // 标记为已访问
+  // 标记为已访问
         visited.add(`${row}-${col}`)
-
-        // 检查当前像素值是否匹配
+  // 检查当前像素值是否匹配
         const pixelValue = matrixData[row][col].value.toString()
         if (pixelValue !== selectedKey) return
-
-        // 更新当前像素的颜色
+  // 更新当前像素的颜色
         const pixelElement = document.querySelector(
           `.pixel-matrix .pixel[data-row="${row}"][data-col="${col}"]`
         ) as HTMLElement
         if (pixelElement) {
           pixelElement.style.backgroundColor = selectedColor
         }
-
-        // 递归检查上下左右相邻的像素
+  // 递归检查上下左右相邻的像素
         updateConnectedPixels(row - 1, col, visited) // 上
         updateConnectedPixels(row + 1, col, visited) // 下
         updateConnectedPixels(row, col - 1, visited) // 左
         updateConnectedPixels(row, col + 1, visited) // 右
       }
-
-      // 开始连锁更新
+  // 开始连锁更新
       updateConnectedPixels(rowIndex, colIndex, new Set<string>())
     } else {
-      console.log('走不相同的逻辑', rowIndex, colIndex, selectedColor);
       // 如果当前像素的值与选中颜色的key不同，则更新当前像素的颜色
       const pixelElement = document.querySelector(
         `.pixel-matrix .pixel[data-row="${rowIndex}"][data-col="${colIndex}"]`
       ) as HTMLElement
-      console.log('pixelElement', pixelElement);
       if (pixelElement) {
         pixelElement.style.backgroundColor = selectedColor
       }
-      
     }
   }
 
