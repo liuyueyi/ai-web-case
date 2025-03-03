@@ -26,6 +26,8 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [selectedColor, setSelectedColor] = useState('')
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [showNumbers, setShowNumbers] = useState(false)
+  const [hasSelectedColor, setHasSelectedColor] = useState(false)
   // 从defaultNumberColors中提取颜色值初始化调色板，保持键值对映射关系
   const colorPalette = Object.entries(defaultNumberColors)
   
@@ -82,12 +84,11 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
         const y = rowIndex * (actualPixelSize + gap)
 
         // 绘制像素背景
-        // console.log('(x,y) 对应的数字 + 颜色', pixel.value, pixel.color, isPreviewMode);
         ctx.fillStyle = pixel.color
         ctx.fillRect(x, y, actualPixelSize, actualPixelSize)
 
-        // 绘制像素值（如果是数字）
-        if (!isPreviewMode && pixel.color === 'white' && (typeof pixel.value === 'number' || (!isNaN(Number(pixel.value)) && pixel.value !== ''))) {
+        // 绘制像素值（如果是数字且显示开关打开）
+        if (!isPreviewMode && showNumbers && pixel.color === 'white' && (typeof pixel.value === 'number' || (!isNaN(Number(pixel.value)) && pixel.value !== ''))) {
           ctx.fillStyle = '#333'
           ctx.font = `bold ${Math.max(actualPixelSize * 0.5, 8)}px Arial`
           ctx.textAlign = 'center'
@@ -100,17 +101,21 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
         }
       })
     })
-  }, [matrixData, actualPixelSize, scale])
+  }, [matrixData, actualPixelSize, scale, showNumbers])
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.2, 3))
   }
   const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.2, 0.5))
+    setScale(prev => Math.max(prev - 0.2, 0.2))
   }
   
   // 处理颜色选择
   const handleColorSelect = (color: string) => {
     setSelectedColor(color)
+    if (!hasSelectedColor) {
+      setShowNumbers(true)
+      setHasSelectedColor(true)
+    }
   }
   // 处理Canvas点击
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -226,6 +231,9 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
           className={isPreviewMode ? 'preview-mode' : 'edit-mode'}
         >
           {isPreviewMode ? '编辑模式' : '预览模式'}
+        </button>
+        <button onClick={() => setShowNumbers(!showNumbers)}>
+          {showNumbers ? '隐藏数字' : '显示数字'}
         </button>
         <button onClick={handleExportImage}>导出图片</button>
       </div>
