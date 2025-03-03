@@ -48,11 +48,85 @@
   transform: scale(1.1);
 }
 
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  justify-content: center;
+}
+
+.color-item {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: rgba(0, 0, 0, 0.7);
+  text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.7);
+}
+
+.color-item:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.color-item.selected {
+  border-color: #333;
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.preview-button {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.preview-button:hover {
+  background-color: #45a049;
+  transform: scale(1.05);
+}
+
 .zoom-level {
   font-size: 14px;
   color: #666;
   min-width: 50px;
   text-align: center;
+  .scale-percentage {
+    display: inline-block;
+    min-width: 60px;
+    text-align: center;
+    font-weight: bold;
+    margin: 0 10px;
+  }
+  
+  .preview-mode {
+    background-color: #4CAF50;
+    color: white;
+  }
+  
+  .edit-mode {
+    background-color: #2196F3;
+    color: white;
+  }
 }
 
 .pixel {
@@ -77,30 +151,12 @@
 .pixel:hover {
   transform: scale(1.1);
   z-index: 1;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
 .color-palette {
-  display: flex;
+  transition: all 0.3s ease;
   gap: 8px;
-  margin-bottom: 15px;
-  padding: 10px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.color-block {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 2px solid transparent;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  position: relative;
-  display: flex;
-  justify-content: center;
   align-items: center;
 }
 
