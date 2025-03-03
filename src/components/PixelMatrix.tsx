@@ -2,12 +2,19 @@ import { FC, useState, useEffect, useRef } from 'react'
 import '../styles/PixelMatrix.css'
 import { defaultNumberColors } from '../config/colorConfig'
 import { backgroundLetterColors } from '../config/borderColorsConfig'
+import FileUploader from './FileUploader'
+
+interface CustomConfig {
+  numColorMap: Record<string, string>;
+  borderColorMap: Record<string, string>;
+}
 
 interface PixelMatrixProps {
   matrix: (number | string)[][]
   pixelSize?: number
   activeColor?: string
   inactiveColor?: string
+  onMatrixUpdate?: (matrix: (number | string)[][]) => void;
 }
 
 interface MatrixData {
@@ -28,8 +35,9 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [showNumbers, setShowNumbers] = useState(false)
   const [hasSelectedColor, setHasSelectedColor] = useState(false)
+  const [customConfig, setCustomConfig] = useState<CustomConfig | null>(null)
   // 从defaultNumberColors中提取颜色值初始化调色板，保持键值对映射关系
-  const colorPalette = Object.entries(defaultNumberColors)
+  const colorPalette = customConfig ? Object.entries(customConfig.numColorMap) : Object.entries(defaultNumberColors)
   
   // 获取像素颜色的函数
   function getPixelColor(value: number | string): string {
@@ -38,26 +46,34 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
       // 检查字符串是否为数字
       const isNumericString = !isNaN(Number(value))
       if (isNumericString) {
-        // 先将字符串转换为 unknown，再转换为具体的键类型
+        // 如果是数字字符串，在编辑模式下使用白色
+        if (!isPreviewMode) return 'white'
+        // 在预览模式下使用配置的颜色
         const numericKey = value as unknown as keyof typeof defaultNumberColors
-        return isPreviewMode ? (defaultNumberColors[numericKey] || activeColor) : 'white'
+        const colorMap = customConfig ? customConfig.numColorMap : defaultNumberColors
+        return colorMap[numericKey] || activeColor
       }
-      // 先将字符串转换为 unknown，再转换为具体的键类型
+      // 如果是字母，使用边框颜色配置
       const letterKey = value as unknown as keyof typeof backgroundLetterColors
-      return backgroundLetterColors[letterKey] || activeColor
+      const borderMap = customConfig ? customConfig.borderColorMap : backgroundLetterColors
+      return borderMap[letterKey] || activeColor
     } else {
-      // 数字类型值直接作为键使用
-      return isPreviewMode ? (defaultNumberColors[value] || activeColor) : 'white'
+      // 如果是数字类型，在编辑模式下使用白色
+      if (!isPreviewMode) return 'white'
+      // 在预览模式下使用配置的颜色
+      const colorMap = customConfig ? customConfig.numColorMap : defaultNumberColors
+      return colorMap[value] || activeColor
     }
   }
   const [matrixData, setMatrixData] = useState<MatrixData[][]>(() =>
     matrix.map(row => row.map(value => ({ value, color: getPixelColor(value) })))
   )
+  const [currentMatrix, setCurrentMatrix] = useState(matrix)
   const actualPixelSize = pixelSize * scale
 
   useEffect(() => {
-    setMatrixData(matrix.map(row => row.map(value => ({ value, color: getPixelColor(value) }))))
-  }, [matrix, isPreviewMode])
+    setMatrixData(currentMatrix.map(row => row.map(value => ({ value, color: getPixelColor(value) }))))
+  }, [currentMatrix, isPreviewMode, customConfig])
   // 渲染Canvas
   useEffect(() => {
     const canvas = canvasRef.current
@@ -236,6 +252,22 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   }
   return (
     <div ref={containerRef} className="pixel-matrix-container">
+      <FileUploader
+        onConfigLoad={(config) => {
+          setCustomConfig({
+            numColorMap: config.numColorMap,
+            borderColorMap: config.borderColorMap
+          });
+          // 更新矩阵数据
+          if (config.matrix) {
+            const newMatrix = config.matrix;
+            setCurrentMatrix(newMatrix);
+            setMatrixData(newMatrix.map(row =>
+              row.map(value => ({ value, color: getPixelColor(value) }))
+            ));
+          }
+        }}
+      />
       <div className="controls">
         <button onClick={handleZoomIn}>放大</button>
         <span className="scale-percentage">{Math.round(scale * 100)}%</span>
