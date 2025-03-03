@@ -66,20 +66,21 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
         // 如果是数字字符串，在编辑模式下使用白色
         if (!isPreviewMode) return 'white'
         // 在预览模式下使用配置的颜色
-        const numericKey = value as unknown as keyof typeof defaultNumberColors
+        const numericValue = value.toString()
         const colorMap = customConfig ? customConfig.numColorMap : defaultNumberColors
-        return colorMap[numericKey] || activeColor
+        return (colorMap as Record<string, string>)[numericValue] || activeColor
       }
       // 如果是字母，使用边框颜色配置
-      const letterKey = value as unknown as keyof typeof backgroundLetterColors
+      const letterKey = value
       const borderMap = customConfig ? customConfig.borderColorMap : backgroundLetterColors
-      return borderMap[letterKey] || activeColor
+      return (borderMap as Record<string, string>)[letterKey] || activeColor
     } else {
       // 如果是数字类型，在编辑模式下使用白色
       if (!isPreviewMode) return 'white'
       // 在预览模式下使用配置的颜色
+      const numericValue = value.toString()
       const colorMap = customConfig ? customConfig.numColorMap : defaultNumberColors
-      return colorMap[value] || activeColor
+      return (colorMap as Record<string, string>)[numericValue] || activeColor
     }
   }
   const [matrixData, setMatrixData] = useState<MatrixData[][]>(() =>
