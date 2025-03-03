@@ -262,7 +262,19 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
     })
     setCurrentMatrix(item.config.matrix)
   }
-
+  const handleDeleteHistory = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updatedHistory = fileHistory.filter(item => item.id !== id);
+    setFileHistory(updatedHistory);
+    localStorage.setItem('pixelMatrixHistory', JSON.stringify(updatedHistory));
+  
+    // 如果删除的是当前选中的配置，重置相关状态
+    if (id === selectedHistoryId) {
+      setSelectedHistoryId(null);
+      setCustomConfig(null);
+      setCurrentMatrix(matrix);
+    }
+  };
   const handleNameEdit = (id: string, newName: string) => {
     const updatedHistory = fileHistory.map(item =>
       item.id === id ? { ...item, name: newName } : item
@@ -271,47 +283,38 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
     setEditingName(null)
     localStorage.setItem('pixelMatrixHistory', JSON.stringify(updatedHistory))
   }
-
   const [isDrawing, setIsDrawing] = useState(false)
-
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true)
     handleCanvasClick(event)
   }
-
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !selectedColor || !canvasRef.current) return
     handleCanvasClick(event)
   }
-
   const handleMouseUp = () => {
     setIsDrawing(false)
   }
-
   const handleConfigLoad = (config: { numColorMap: Record<string, string>; borderColorMap: Record<string, string>; matrix: (number | string)[][] }) => {
     setCustomConfig({
       numColorMap: config.numColorMap,
       borderColorMap: config.borderColorMap
     })
     setCurrentMatrix(config.matrix)
-
-    // 生成唯一ID
+  // 生成唯一ID
     const newHistoryId = Date.now().toString()
-
-    // 创建新的历史记录
+  // 创建新的历史记录
     const newHistoryItem: FileHistory = {
       id: newHistoryId,
       name: `配置 ${fileHistory.length + 1}`,
       config: config,
       timestamp: Date.now()
     }
-
-    // 更新历史记录
+  // 更新历史记录
     const updatedHistory = [...fileHistory, newHistoryItem]
     setFileHistory(updatedHistory)
     setSelectedHistoryId(newHistoryId)
-
-    // 保存到localStorage
+  // 保存到localStorage
     localStorage.setItem('pixelMatrixHistory', JSON.stringify(updatedHistory))
   }
   return (
@@ -379,15 +382,23 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
               ) : (
                 <div className="history-item-content">
                   <span>{item.name}</span>
-                  <button
-                    className="edit-name-btn"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setEditingName(item.id)
-                    }}
-                  >
-                    ✎
-                  </button>
+                  <div>
+                    <button
+                      className="edit-name-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingName(item.id);
+                      }}
+                    >
+                      ✎
+                    </button>
+                    <button
+                      className="delete-btn"
+                      onClick={(e) => handleDeleteHistory(item.id, e)}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
