@@ -219,7 +219,21 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
     link.href = canvas.toDataURL('image/png')
     link.click()
   }
+  const [isDrawing, setIsDrawing] = useState(false)
 
+  const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDrawing(true)
+    handleCanvasClick(event)
+  }
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !selectedColor || !canvasRef.current) return
+    handleCanvasClick(event)
+  }
+
+  const handleMouseUp = () => {
+    setIsDrawing(false)
+  }
   return (
     <div ref={containerRef} className="pixel-matrix-container">
       <div className="controls">
@@ -251,7 +265,10 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
       </div>
       <canvas
         ref={canvasRef}
-        onClick={handleCanvasClick}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
         style={{ cursor: selectedColor ? 'pointer' : 'default' }}
       />
     </div>
