@@ -87,7 +87,7 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
         ctx.fillRect(x, y, actualPixelSize, actualPixelSize)
 
         // 绘制像素值（如果是数字）
-        if (typeof pixel.value === 'number' || (!isNaN(Number(pixel.value)) && pixel.value !== '')) {
+        if (!isPreviewMode && pixel.color === 'white' && (typeof pixel.value === 'number' || (!isNaN(Number(pixel.value)) && pixel.value !== ''))) {
           ctx.fillStyle = '#333'
           ctx.font = `bold ${Math.max(actualPixelSize * 0.5, 8)}px Arial`
           ctx.textAlign = 'center'
@@ -204,6 +204,17 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
     }
   }, [matrix, pixelSize])
 
+  const handleExportImage = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    // 创建下载链接
+    const link = document.createElement('a')
+    link.download = 'pixel-matrix.png'
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+  }
+
   return (
     <div ref={containerRef} className="pixel-matrix-container">
       <div className="controls">
@@ -216,6 +227,7 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
         >
           {isPreviewMode ? '编辑模式' : '预览模式'}
         </button>
+        <button onClick={handleExportImage}>导出图片</button>
       </div>
       <div className="color-palette">
         {colorPalette.map(([key, color]) => (
