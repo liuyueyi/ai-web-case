@@ -22,6 +22,17 @@ interface MatrixData {
   color: string
 }
 
+interface FileHistory {
+  id: string;
+  name: string;
+  config: {
+    numColorMap: Record<string, string>;
+    borderColorMap: Record<string, string>;
+    matrix: (number | string)[][];
+  };
+  timestamp: number;
+}
+
 const PixelMatrix: FC<PixelMatrixProps> = ({
   matrix,
   pixelSize = 20,
@@ -36,6 +47,12 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   const [showNumbers, setShowNumbers] = useState(false)
   const [hasSelectedColor, setHasSelectedColor] = useState(false)
   const [customConfig, setCustomConfig] = useState<CustomConfig | null>(null)
+  const [fileHistory, setFileHistory] = useState<FileHistory[]>(() => {
+    const savedHistory = localStorage.getItem('pixelMatrixHistory')
+    return savedHistory ? JSON.parse(savedHistory) : []
+  })
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState<string | null>(null)
   // 从defaultNumberColors中提取颜色值初始化调色板，保持键值对映射关系
   const colorPalette = customConfig ? Object.entries(customConfig.numColorMap) : Object.entries(defaultNumberColors)
   
@@ -235,6 +252,25 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
     link.href = canvas.toDataURL('image/png')
     link.click()
   }
+
+  const handleHistorySelect = (item: FileHistory) => {
+    setSelectedHistoryId(item.id)
+    setCustomConfig({
+      numColorMap: item.config.numColorMap,
+      borderColorMap: item.config.borderColorMap
+    })
+    setCurrentMatrix(item.config.matrix)
+  }
+
+  const handleNameEdit = (id: string, newName: string) => {
+    const updatedHistory = fileHistory.map(item =>
+      item.id === id ? { ...item, name: newName } : item
+    )
+    setFileHistory(updatedHistory)
+    setEditingName(null)
+    localStorage.setItem('pixelMatrixHistory', JSON.stringify(updatedHistory))
+  }
+
   const [isDrawing, setIsDrawing] = useState(false)
 
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -250,59 +286,113 @@ const PixelMatrix: FC<PixelMatrixProps> = ({
   const handleMouseUp = () => {
     setIsDrawing(false)
   }
+
+  const handleConfigLoad = (config: { numColorMap: Record<string, string>; borderColorMap: Record<string, string>; matrix: (number | string)[][] }) => {
+    setCustomConfig({
+      numColorMap: config.numColorMap,
+      borderColorMap: config.borderColorMap
+    })
+    setCurrentMatrix(config.matrix)
+
+    // 生成唯一ID
+    const newHistoryId = Date.now().toString()
+
+    // 创建新的历史记录
+    const newHistoryItem: FileHistory = {
+      id: newHistoryId,
+      name: `配置 ${fileHistory.length + 1}`,
+      config: config,
+      timestamp: Date.now()
+    }
+
+    // 更新历史记录
+    const updatedHistory = [...fileHistory, newHistoryItem]
+    setFileHistory(updatedHistory)
+    setSelectedHistoryId(newHistoryId)
+
+    // 保存到localStorage
+    localStorage.setItem('pixelMatrixHistory', JSON.stringify(updatedHistory))
+  }
   return (
     <div ref={containerRef} className="pixel-matrix-container">
-      <FileUploader
-        onConfigLoad={(config) => {
-          setCustomConfig({
-            numColorMap: config.numColorMap,
-            borderColorMap: config.borderColorMap
-          });
-          // 更新矩阵数据
-          if (config.matrix) {
-            const newMatrix = config.matrix;
-            setCurrentMatrix(newMatrix);
-            setMatrixData(newMatrix.map(row =>
-              row.map(value => ({ value, color: getPixelColor(value) }))
-            ));
-          }
-        }}
-      />
-      <div className="controls">
-        <button onClick={handleZoomIn}>放大</button>
-        <span className="scale-percentage">{Math.round(scale * 100)}%</span>
-        <button onClick={handleZoomOut}>缩小</button>
-        <button 
-          onClick={() => setIsPreviewMode(!isPreviewMode)}
-          className={isPreviewMode ? 'preview-mode' : 'edit-mode'}
-        >
-          {isPreviewMode ? '编辑模式' : '预览模式'}
-        </button>
-        <button onClick={() => setShowNumbers(!showNumbers)}>
-          {showNumbers ? '隐藏数字' : '显示数字'}
-        </button>
-        <button onClick={handleExportImage}>导出图片</button>
-      </div>
-      <div className="color-palette">
-        {colorPalette.map(([key, color]) => (
-          <div
-            key={key}
-            className={`color-item ${selectedColor === color ? 'selected' : ''}`}
-            style={{ backgroundColor: color }}
-            onClick={() => handleColorSelect(color)}
+      <div className="main-content">
+        <FileUploader onConfigLoad={handleConfigLoad} />
+        <div className="controls">
+          <button onClick={handleZoomIn}>放大</button>
+          <span className="scale-percentage">{Math.round(scale * 100)}%</span>
+          <button onClick={handleZoomOut}>缩小</button>
+          <button 
+            onClick={() => setIsPreviewMode(!isPreviewMode)}
+            className={isPreviewMode ? 'preview-mode' : 'edit-mode'}
           >
-            {key}
-          </div>
-        ))}
+            {isPreviewMode ? '编辑模式' : '预览模式'}
+          </button>
+          <button onClick={() => setShowNumbers(!showNumbers)}>
+            {showNumbers ? '隐藏数字' : '显示数字'}
+          </button>
+          <button onClick={handleExportImage}>导出图片</button>
+        </div>
+        <div className="color-palette">
+          {colorPalette.map(([key, color]) => (
+            <div
+              key={key}
+              className={`color-item ${selectedColor === color ? 'selected' : ''}`}
+              style={{ backgroundColor: color }}
+              onClick={() => handleColorSelect(color)}
+            >
+              {key}
+            </div>
+          ))}
+        </div>
+        <canvas
+          ref={canvasRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          style={{ cursor: selectedColor ? 'pointer' : 'default' }}
+        />
       </div>
-      <canvas
-        ref={canvasRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        style={{ cursor: selectedColor ? 'pointer' : 'default' }}
-      />
+      <div className="history-panel">
+        <h3>文件历史</h3>
+        <div className="history-list">
+          {fileHistory.map((item) => (
+            <div
+              key={item.id}
+              className={`history-item ${selectedHistoryId === item.id ? 'selected' : ''}`}
+              onClick={() => handleHistorySelect(item)}
+            >
+              {editingName === item.id ? (
+                <input
+                  type="text"
+                  defaultValue={item.name}
+                  onBlur={(e) => handleNameEdit(item.id, e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleNameEdit(item.id, e.currentTarget.value)
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  autoFocus
+                />
+              ) : (
+                <div className="history-item-content">
+                  <span>{item.name}</span>
+                  <button
+                    className="edit-name-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditingName(item.id)
+                    }}
+                  >
+                    ✎
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
